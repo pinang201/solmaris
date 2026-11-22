@@ -92,8 +92,8 @@ SOL.Vehicles = (function () {
       if (o === car) continue;
       const d = SOL.dist2d(car.x, car.z, o.x, o.z);
       if (d < 7) {
-        const ahead = Math.cos(car.heading) * (o.z - car.z) + -Math.sin(car.heading) * (o.x - car.x);
-        if (ahead < 0 || d < 4) want = Math.min(want, 2);
+        const ahead = -Math.sin(car.heading) * (o.x - car.x) - Math.cos(car.heading) * (o.z - car.z);
+        if (ahead > 0 || d < 4) want = Math.min(want, 2);
       }
     }
     // At world edge or near an intersection, sometimes re-route.

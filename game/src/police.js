@@ -29,13 +29,14 @@ SOL.Police = (function () {
     }
     let nearest = 999, anySeen = false;
     for (const c of cops) {
+      if (c === target) continue;
       const d = SOL.dist2d(c.x, c.z, target.x, target.z);
       nearest = Math.min(nearest, d);
       if (d < 46) anySeen = true;
       // Pursuit steering: aim at target, ram gently.
       const want = Math.atan2(-(target.x - c.x), -(target.z - c.z));
       c.heading += SOL.clamp(SOL.wrapAngle(want - c.heading), -2.2 * dt, 2.2 * dt);
-      const top = 14 + S.wanted * 3.4 + (d > 30 ? 5 : 0);
+      const top = 13 + S.wanted * 3.2 + (d > 30 ? 2.4 : 0);
       const inFrontBlocked = SOL.Vehicles.cars.some(o => o !== c && SOL.dist2d(c.x, c.z, o.x, o.z) < 5);
       c.speed += SOL.clamp((inFrontBlocked ? 4 : top) - c.speed, -16 * dt, 7 * dt);
       SOL.Vehicles.step(c, dt);

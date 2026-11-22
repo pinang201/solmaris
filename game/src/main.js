@@ -120,6 +120,7 @@
       const s = SOL.Missions.state;
       s.cash = 2500; s.charms = []; s.finished = false;
       SOL.Missions.startMission(0, missionCtx);
+      SOL.Missions.charmMeshes.forEach(g => g.visible = true);
     } else {
       const sv = SOL.Save.load();
       if (sv) {
@@ -133,6 +134,7 @@
     P.health = 100; P.x = 60; P.z = -40; P.inCar = null; P.camYaw = 2.4;
     show('start-screen', false); show('end-screen', false); show('pause-screen', false);
     document.getElementById('hud').style.display = 'block';
+    SOL.Missions.clearOverride(); G.taxi = null;
     G.mode = 'playing';
     SOL.Hud.banner('SOLMARIS', 1800);
   }
@@ -150,6 +152,8 @@
   }
   function respawn() {
     SOL.Police.clear();
+    for (const c of syndicate) { const i = SOL.Vehicles.cars.indexOf(c); if (i >= 0) SOL.Vehicles.cars.splice(i, 1); scene.remove(c.mesh); }
+    syndicate = [];
     P.health = 100; P.inCar = null; P.x = C.landmarks.hospital.x + 9; P.z = C.landmarks.hospital.z + 8;
     show('end-screen', false); G.mode = 'playing';
     SOL.Missions.say('Nurse: Easy, Mr Venn. Your car keys are… somewhere. The city is still out there.', 5);
@@ -169,7 +173,7 @@
       if (G.mode === 'playing') {
         G.mode = 'paused'; show('pause-screen', true);
         document.getElementById('pause-stats').textContent =
-          'Cash $' + SOL.Missions.state.cash.toLocaleString() + ' · Mission ' + (SOL.Missions.state.index + 1) + ' of 5 · Charms ' + SOL.Missions.state.charms.length + '/10';
+          'Cash $' + SOL.Missions.state.cash.toLocaleString() + ' · ' + (SOL.Missions.state.finished ? 'Story complete' : 'Mission ' + (SOL.Missions.state.index + 1) + ' of 5') + ' · Charms ' + SOL.Missions.state.charms.length + '/10';
         if (document.exitPointerLock) document.exitPointerLock();
       } else if (G.mode === 'paused') { show('pause-screen', false); G.mode = 'playing'; }
     }
@@ -212,7 +216,7 @@
       const wasParked = best.driver === 'parked';
       P.inCar = best; best.driver = 'player'; SOL.Audio.door();
       if (!wasParked || best.isGold) { SOL.Police.crime(best.isGold ? 1.4 : 0.7, P.x, P.z); SOL.Missions.say(best.isGold ? 'That\u2019s the Aurora GT! Golden, loud, and very stolen.' : 'Borrowed. You\u2019ll bring it back. Probably.', 3.5); }
-      if (best.kind === 'police') SOL.Police.crime(1, P.x, P.z);
+      if (best.kind === 'police') { const ci = SOL.Police.cops.indexOf(best); if (ci >= 0) SOL.Police.cops.splice(ci, 1); SOL.Police.crime(1, P.x, P.z); }
     }
   }
 
@@ -228,14 +232,14 @@
     if (G.taxi) {
       const t = G.taxi;
       if (t.phase === 'pickup') {
-        SOL.Missions.setMarker(t.ped.x, t.ped.z);
+        SOL.Missions.setOverride(t.ped.x, t.ped.z);
         if (P.inCar && SOL.dist2d(P.x, P.z, t.ped.x, t.ped.z) < 4.5) {
           t.phase = 'ride'; const dests = [C.landmarks.cafe, C.landmarks.marina, C.landmarks.bank, C.landmarks.rosa, C.landmarks.hospital];
           t.dest = SOL.rngPick(rng, dests); t.dist = Math.max(30, SOL.dist2d(P.x, P.z, t.dest.x, t.dest.z));
           t.ped.mesh.visible = false;
-          SOL.Missions.setMarker(t.dest.x, t.dest.z);
+          SOL.Missions.setOverride(t.dest.x, t.dest.z);
           SOL.Missions.say('Passenger: ' + t.dest.label + ', please — and I tip for smooth driving!', 4);
-          // Restore story marker afterwards is handled on drop-off.
+          // Story marker is preserved underneath; the override is cleared on drop-off.
         } else if (!P.inCar && SOL.dist2d(P.x, P.z, t.ped.x, t.ped.z) < 3) {
           // Hint only; pickup needs a car.
         }
@@ -245,8 +249,8 @@
         SOL.Missions.say('Passenger: Perfect ride! Fare $' + fare + '. Five stars, wheelman.', 4);
         t.ped.mesh.visible = true; t.ped.x = t.dest.x + 3; t.ped.z = t.dest.z + 3; t.ped.taxi = false;
         G.taxi = null; G.taxiCooldown = 35; missionCtx.save();
-        // Re-point the beacon at the story objective by restarting marker logic next mission tick:
-        SOL.Missions.clearMarker();
+        // Override cleared: beacon returns to the story objective automatically.
+        SOL.Missions.clearOverride();
       }
     }
   }
@@ -352,7 +356,7 @@
       inCar: !!P.inCar, speed: P.inCar ? P.inCar.speed : 0, clockMin: G.clockMin,
       charms: M.charms.length, prompt, busted01: SOL.Police.state.bustedT / 2.4,
       px: P.x, pz: P.z, heading: P.inCar ? P.inCar.heading : P.camYaw,
-      marker: (G.taxi && !shotPin) ? SOL.Missions.state.marker : SOL.Missions.state.marker,
+      marker: SOL.Missions.displayMarker(),
       cops: SOL.Police.cops, hostiles: syndicate
     });
     renderer.render(scene, camera);

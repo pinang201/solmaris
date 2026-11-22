@@ -10,6 +10,7 @@ SOL.Missions = (function () {
     timer: 0, drops: 0, taxiPed: null, taxiDest: null, followT: 0
   };
   let beacon = null, beaconRing = null, charmMeshes = [], dropMeshes = [], sceneRef = null;
+  let overrideMarker = null;
   const CHARM_SPOTS = [[84, -100], [100, 110], [-100, 108], [24, 30], [-20, -60], [70, -100], [-60, -20], [10, 70], [90, 40], [-104, -60]];
   function init(scene) {
     sceneRef = scene;
@@ -32,8 +33,12 @@ SOL.Missions = (function () {
     }
   }
   function say(text, secs) { S.dialogue = text; S.dialogueT = secs || 6; }
-  function setMarker(x, z) { S.marker = { x, z }; beacon.visible = true; beaconRing.visible = true; beacon.position.x = x; beacon.position.z = z; beaconRing.position.x = x; beaconRing.position.z = z; }
-  function clearMarker() { S.marker = null; beacon.visible = false; beaconRing.visible = false; }
+  function applyBeacon() { const m = overrideMarker || S.marker; if (!m) { beacon.visible = false; beaconRing.visible = false; return; } beacon.visible = true; beaconRing.visible = true; beacon.position.x = m.x; beacon.position.z = m.z; beaconRing.position.x = m.x; beaconRing.position.z = m.z; }
+  function setMarker(x, z) { S.marker = { x, z }; applyBeacon(); }
+  function clearMarker() { S.marker = null; applyBeacon(); }
+  function setOverride(x, z) { overrideMarker = { x, z }; applyBeacon(); }
+  function clearOverride() { overrideMarker = null; applyBeacon(); }
+  function displayMarker() { return overrideMarker || S.marker; }
   function startMission(i, ctx) {
     S.index = i; const m = SOL.CONFIG.missions[i]; if (!m) { S.finished = true; S.objective = 'Story complete — The Salty Anchor is saved! Free-roam Solmaris.'; clearMarker(); return; }
     say(m.intro, 8); S.objective = m.objective; S.phase = 'go';
@@ -48,9 +53,9 @@ SOL.Missions = (function () {
     const m = SOL.CONFIG.missions[S.index];
     S.cash += m.pay; SOL.Audio.missionDone(); SOL.Audio.cash();
     say((msg || 'Job done.') + ' Rosa paid $' + m.pay.toLocaleString() + '. Café fund: $' + S.cash.toLocaleString() + ' / $50,000.', 7);
-    ctx.save();
     startMission(S.index + 1, ctx);
     if (S.finished) say('Dario: That\u2019s the last of it — $' + S.cash.toLocaleString() + '. The Salty Anchor stays ours. Hale can whistle.', 10);
+    ctx.save();
   }
   function makeDrop(scene, x, z) {
     const g = new THREE.Group();
@@ -116,5 +121,5 @@ SOL.Missions = (function () {
     }
     if (m.id === 'payday' && S.phase === 'deliver' && d < 6) complete(ctx, 'Delivered at The Salty Anchor.');
   }
-  return { init, startMission, update, say, setMarker, clearMarker, makeDrop, state: S, charmMeshes, get drops() { return dropMeshes; } };
+  return { init, startMission, update, say, setMarker, clearMarker, setOverride, clearOverride, displayMarker, makeDrop, state: S, charmMeshes, get drops() { return dropMeshes; } };
 })();

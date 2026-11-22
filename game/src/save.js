@@ -10,7 +10,7 @@ SOL.Save = {
   store: function (state) {
     try {
       localStorage.setItem(this.KEY, JSON.stringify({
-        mission: state.mission, cash: state.cash, charms: state.charms,
+        mission: state.index, cash: state.cash, charms: state.charms,
         finished: !!state.finished, taxiFares: state.taxiFares || 0
       }));
     } catch (e) { /* private mode: play without saving */ }
