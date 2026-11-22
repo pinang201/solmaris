@@ -3,17 +3,131 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>Solmaris — a wheelman's afternoon</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#1a2230; font-family:Verdana, Geneva, sans-serif; }
+  #game3d { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  #errors { position:fixed; left:8px; bottom:8px; color:#ff8080; font-size:12px; z-index:99; max-width:60vw; white-space:pre-wrap; }
+  .panel { background:rgba(12,20,32,.82); color:#fff; border:2px solid #ffd94f; border-radius:12px; }
+  /* HUD */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:10; display:none; }
+  #hud-topright { position:absolute; top:12px; right:14px; text-align:right; }
+  #hud-cash { font-size:24px; font-weight:bold; color:#7be495; text-shadow:0 2px 4px #000; }
+  #hud-stars { font-size:26px; color:#ffd94f; text-shadow:0 2px 4px #000; letter-spacing:2px; }
+  #hud-clock { font-size:15px; color:#fff; text-shadow:0 1px 3px #000; }
+  #hud-charms { font-size:14px; color:#ffd94f; text-shadow:0 1px 3px #000; }
+  #hud-health-wrap { width:190px; height:13px; background:rgba(0,0,0,.55); border:1px solid #fff; border-radius:7px; margin:6px 0 0 auto; overflow:hidden; }
+  #hud-health-fill { height:100%; width:100%; background:#53d769; }
+  #hud-busted-wrap { width:190px; height:7px; background:rgba(0,0,0,.4); border-radius:4px; margin:4px 0 0 auto; overflow:hidden; }
+  #hud-busted-fill { height:100%; width:0%; background:#2266ff; }
+  #hud-bottomleft { position:absolute; left:14px; bottom:14px; }
+  #minimap { width:168px; height:168px; border:3px solid rgba(255,255,255,.85); border-radius:10px; background:#274b3a; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  #hud-speed { position:absolute; right:18px; bottom:16px; font-size:30px; font-weight:bold; color:#fff; text-shadow:0 2px 5px #000; }
+  #hud-objective-wrap { position:absolute; top:12px; left:50%; transform:translateX(-50%); max-width:620px; text-align:center; padding:8px 18px; }
+  #hud-mission { font-size:12px; letter-spacing:2px; color:#ffd94f; text-transform:uppercase; }
+  #hud-objective { font-size:16px; font-weight:bold; color:#fff; margin-top:2px; }
+  #hud-dialogue { position:absolute; bottom:110px; left:50%; transform:translateX(-50%); max-width:640px; padding:10px 18px; font-size:16px; color:#ffeec2; text-align:center; display:none; }
+  #hud-prompt { position:absolute; bottom:64px; left:50%; transform:translateX(-50%); padding:6px 14px; font-size:14px; color:#fff; display:none; }
+  #hud-banner { position:absolute; top:34%; left:50%; transform:translateX(-50%); font-size:44px; font-weight:bold; color:#ffd94f; text-shadow:0 3px 0 #a33, 0 6px 18px #000; display:none; letter-spacing:2px; }
+  /* Menus */
+  .screen { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, rgba(58,110,165,.88), rgba(242,165,107,.92) 62%, rgba(30,127,158,.95)); }
+  .card { max-width:620px; width:92vw; padding:28px 34px; text-align:center; }
+  .card h1 { margin:0; font-size:54px; letter-spacing:6px; color:#ffd94f; text-shadow:0 3px 0 #b3541e, 0 8px 22px rgba(0,0,0,.45); font-style:italic; }
+  .card h2 { margin:4px 0 10px; font-weight:normal; color:#c9ecff; font-size:17px; letter-spacing:1px; }
+  .card p { font-size:14.5px; line-height:1.55; color:#f4f7fa; }
+  .controls { text-align:left; font-size:13.5px; line-height:1.7; background:rgba(0,0,0,.25); border-radius:8px; padding:10px 16px; margin:12px 0; }
+  button { pointer-events:auto; cursor:pointer; font-size:17px; font-weight:bold; padding:11px 30px; margin:6px; border:none; border-radius:9px;
+    background:#ffd94f; color:#40260a; box-shadow:0 3px 0 #b98a1d; }
+  button:hover { background:#ffe27a; }
+  button.secondary { background:#e8eef4; box-shadow:0 3px 0 #8fa3b5; }
+  #pause-screen, #end-screen { display:none; background:rgba(10,16,26,.72); }
+  #end-screen h1 { color:#ff6b5e; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
-<p id="status" role="status" aria-live="polite"></p>
-<script type="module" src="./src/main.js"></script>
+<canvas id="game3d" aria-label="Solmaris: 3D open-world driving and action game"></canvas>
+<div id="errors" aria-live="polite"></div>
+
+<div id="hud">
+  <div id="hud-objective-wrap" class="panel">
+    <div id="hud-mission">Solmaris</div>
+    <div id="hud-objective"></div>
+  </div>
+  <div id="hud-topright">
+    <div id="hud-stars">☆☆☆☆☆</div>
+    <div id="hud-cash">$0</div>
+    <div id="hud-clock">17:12</div>
+    <div id="hud-charms">☀ 0 / 10</div>
+    <div id="hud-health-wrap"><div id="hud-health-fill"></div></div>
+    <div id="hud-busted-wrap"><div id="hud-busted-fill"></div></div>
+  </div>
+  <div id="hud-bottomleft"><canvas id="minimap" width="168" height="168"></canvas></div>
+  <div id="hud-speed"></div>
+  <div id="hud-dialogue" class="panel"></div>
+  <div id="hud-prompt" class="panel"></div>
+  <div id="hud-banner"></div>
+</div>
+
+<div id="start-screen" class="screen">
+  <div class="card panel">
+    <h1>SOLMARIS</h1>
+    <h2>a wheelman's afternoon · golden hour, every hour</h2>
+    <p>You are <b>Dario Venn</b>, a wheelman with a soft heart and a heavy right foot.
+    Your sister's café, <b>The Salty Anchor</b>, owes Viktor Hale's Harbor Syndicate more than it can pay.
+    Fixer <b>"Auntie Rosa" Delgado</b> — whose flower shop fronts for half the bay — has five jobs that add up to
+    the <b>$50,000</b> that saves the café. Drive them. Don't get caught. Don't be late.</p>
+    <div class="controls">
+      🚶 <b>On foot:</b> WASD move · mouse look (click the game to capture) · Shift sprint · <b>E</b> enter/exit car · left-click shoot (aim with mouse)<br>
+      🚗 <b>Driving:</b> W/S accelerate &amp; brake/reverse · A/D steer · Space handbrake<br>
+      ⏸ <b>P</b> pause &amp; save · Crimes raise your wanted stars — break police line of sight to cool off.
+    </div>
+    <button id="btn-new">New Game</button>
+    <button id="btn-continue" class="secondary">Continue</button>
+    <p style="font-size:12px;opacity:.85">Side work: taxi pickups (walk up to a flagged pedestrian with a car) · 10 hidden sun charms ☀</p>
+  </div>
+</div>
+
+<div id="pause-screen" class="screen">
+  <div class="card panel">
+    <h1 style="font-size:36px">PAUSED</h1>
+    <p id="pause-stats"></p>
+    <button id="btn-resume">Resume</button>
+    <button id="btn-save" class="secondary">Save Game</button>
+    <button id="btn-quit" class="secondary">Save &amp; Title</button>
+  </div>
+</div>
+
+<div id="end-screen" class="screen">
+  <div class="card panel">
+    <h1 id="end-title">BUSTED</h1>
+    <p id="end-text"></p>
+    <button id="btn-respawn">Continue at Hospital</button>
+  </div>
+</div>
+
+<script>
+  window.__errors = [];
+  window.onerror = function (msg, src, line) {
+    window.__errors.push(msg + ' @' + line);
+    var el = document.getElementById('errors');
+    if (el) el.textContent = window.__errors.join('\n');
+  };
+</script>
+<script src="vendor/three.min.js"></script>
+<script src="src/config.js"></script>
+<script src="src/random.js"></script>
+<script src="src/textures.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/save.js"></script>
+<script src="src/city.js"></script>
+<script src="src/vehicles.js"></script>
+<script src="src/pedestrians.js"></script>
+<script src="src/player.js"></script>
+<script src="src/police.js"></script>
+<script src="src/missions.js"></script>
+<script src="src/hud.js"></script>
+<script src="src/shots.js"></script>
+<script src="src/main.js"></script>
 </body>
 </html>

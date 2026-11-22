@@ -1,61 +1,51 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
-
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
-
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
-export const STEP = 1 / 60;
-
-export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
+// Solmaris configuration — city layout, tuning and story data.
+// All distances are metres in three.js world units. The city is a
+// deterministic grid: vertical avenues and horizontal streets cross
+// city blocks; the bay and beach sit on the east (+X) edge.
+window.SOL = window.SOL || {};
+SOL.CONFIG = {
+  cityHalf: 120,
+  avenues: [-96, -56, -16, 24, 64],        // x of N-S roads
+  streets: [-96, -56, -16, 24, 64, 104],   // z of E-W roads
+  roadW: 11, sidewalkW: 3.4,
+  beachX: 88, waterX: 106,
+  playerSpeed: 7.2, sprintSpeed: 11.5,
+  gravity: 0,
+  colors: {
+    sky: 0xffb36b, skyTop: 0x3a6ea5, fog: 0xf2a56b,
+    sand: 0xe8c98a, water: 0x1e7f9e, road: 0x33373d,
+    sidewalk: 0xb8a88f, grass: 0x5f9e52,
+    pastel: [0xf6c6a8, 0xf9e2ae, 0xa8d8c8, 0xf4a9b8, 0xaec6f5, 0xe8b4f0, 0xfff3c4, 0xffd1a3]
+  },
+  missions: [
+    { id: 'flower', name: '1 · Flower Run', pay: 6000,
+      intro: "Rosa: Dario, take this locked case to the marina office. Fast — and don't dent it.",
+      objective: 'Deliver Rosa\u2019s case to the marina office' },
+    { id: 'wheelman', name: '2 · The Wheelman', pay: 9000,
+      intro: "Rosa: Hale keeps a golden Aurora GT at the marina lot. Borrow it. Bring it to my garage.",
+      objective: 'Steal the golden Aurora GT at the marina and deliver it to Rosa\u2019s garage' },
+    { id: 'tail', name: '3 · Tail the Courier', pay: 10000,
+      intro: "Rosa: A syndicate courier leaves the downtown bank. Follow — close enough to see, far enough to breathe.",
+      objective: 'Tail the courier car: stay 14–42 m away until it stops, then take the ledger' },
+    { id: 'heat', name: '4 · Heat', pay: 11000,
+      intro: "Rosa: The ledger names everyone. Hale called the police on you — lose the heat, reach the safehouse.",
+      objective: 'Escape a 3-star wanted level, then reach the safehouse' },
+    { id: 'payday', name: '5 · Bay Day Payday', pay: 14000,
+      intro: "Rosa: Three cash drops, one afternoon. Beach, lighthouse, downtown. Hale's boys will ram you — finish at The Salty Anchor.",
+      objective: 'Collect 3 cash drops, then deliver the money to The Salty Anchor café' }
+  ],
+  goalCash: 50000,
+  landmarks: {
+    rosa: { x: -96, z: -96, label: "Rosa's Flowers" },
+    garage: { x: -88, z: 24, label: "Rosa's Garage" },
+    marina: { x: 76, z: 64, label: 'Marina Office' },
+    marinaLot: { x: 64, z: 52, label: 'Marina Lot' },
+    bank: { x: 24, z: -16, label: 'Downtown Bank' },
+    safehouse: { x: -56, z: 104, label: 'Safehouse' },
+    cafe: { x: 64, z: -56, label: 'The Salty Anchor' },
+    hospital: { x: -16, z: 64, label: 'Solmaris Hospital' },
+    lighthouse: { x: 100, z: 118, label: 'Lighthouse Point' },
+    beachDrop: { x: 94, z: 10, label: 'Beach Drop' },
+    downtownDrop: { x: 4, z: -36, label: 'Downtown Drop' }
+  }
 };
-
-export const LIVES = 3;
-
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
-};
-
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
-};
-
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
-
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
-
-export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
-  player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
-  text: '#eef1f5',
-  muted: '#8b93a3',
-};
-
-export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
